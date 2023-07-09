@@ -1,0 +1,12 @@
+[meta]
+name     = "Unbeaten ATs"
+author   = "XertroV"
+category = "Race"
+version  = "0.1.0"
+siteid   = 409
+blocks   = []
+
+[script]
+#__DEFINES__
+dependencies = ["NadeoServices"]
+optional_dependencies = ["ManiaExchange"]
