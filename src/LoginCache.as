@@ -1,7 +1,9 @@
 string[] loginQueue;
+string[] wsidQueue;
 Json::Value@ loginCache = Json::Object();
 Json::Value@ wsidCache = Json::Object();
 Json::Value@ loginQueued = Json::Object();
+Json::Value@ wsidQueued = Json::Object();
 
 string GetDisplayNameForLogin(const string &in login) {
     if (!loginCache.HasKey(login)) {
@@ -11,11 +13,24 @@ string GetDisplayNameForLogin(const string &in login) {
     return loginCache.Get(login, login);
     // return ret;
 }
+string GetDisplayNameForWsid(const string &in wsid) {
+    if (!wsidCache.HasKey(wsid)) {
+        return "?? " + wsid;
+    }
+    // string ret;
+    return wsidCache.Get(wsid, wsid);
+    // return ret;
+}
 
 void QueueAuthorLoginCache(const string &in login) {
     if (loginCache.HasKey(login) || loginQueued.HasKey(login)) return;
     loginQueued[login] = true;
     loginQueue.InsertLast(login);
+}
+void QueueWsidNameCache(const string &in wsid) {
+    if (wsidCache.HasKey(wsid) || wsidQueued.HasKey(wsid)) return;
+    wsidQueued[wsid] = true;
+    wsidQueue.InsertLast(wsid);
 }
 
 bool startedAuthorLoginLoop = false;
@@ -40,6 +55,31 @@ void GetAuthorLoginLoop() {
                 loginCache[logins[i]] = resp.GetDisplayName(wsids[i]);
                 wsidCache[wsids[i]] = resp.GetDisplayName(wsids[i]);
                 // print("Login: " + logins[i] + " = " + string(loginCache[logins[i]]));
+            }
+        } else {
+            sleep(250);
+        }
+    }
+}
+
+bool startedWsidLoop = false;
+void GetWsidLoop() {
+    if (startedWsidLoop) return;
+    startedWsidLoop = true;
+
+    while (true) {
+        yield();
+        if (wsidQueue.Length > 0) {
+            string[] wsids;
+            while (wsids.Length < 50 && wsidQueue.Length > 0) {
+                int last = wsidQueue.Length - 1;
+                wsids.InsertLast(wsidQueue[last]);
+                wsidQueue.RemoveLast();
+            }
+            auto resp = Core::WSIDsToNames(wsids);
+            trace("Got display names: " + wsids.Length);
+            for (uint i = 0; i < wsids.Length; i++) {
+                wsidCache[wsids[i]] = resp.GetDisplayName(wsids[i]);
             }
         } else {
             sleep(250);

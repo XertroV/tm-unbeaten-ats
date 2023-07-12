@@ -9,6 +9,7 @@ void Main() {
     startnew(PopulateTmxTags);
     startnew(GetUnbeatenATsInfo);
     startnew(GetAuthorLoginLoop);
+    startnew(GetWsidLoop);
 }
 
 void OnDestroyed() { Unload(); }

@@ -20,25 +20,59 @@ void _GetUnbeatenATsInfo() {
 
 class UnbeatenATsData {
     Json::Value@ mainData;
+    Json::Value@ recentData;
     string[] keys;
+    string[] keysRB;
     private bool doneLoading = false;
+    private bool doneLoadingRecent = false;
+    int LoadingDoneTime = -1;
 
     UnbeatenATMap@[] maps;
     UnbeatenATMap@[] filteredMaps;
 
+    UnbeatenATMap@[] recentlyBeaten;
+
     UnbeatenATsData() {
+        StartRefreshData();
+    }
+
+    void StartRefreshData() {
+        doneLoading = false;
+        doneLoadingRecent = false;
+        maps = {};
+        filteredMaps = {};
+        recentlyBeaten = {};
         startnew(CoroutineFunc(this.RunInit));
+        startnew(CoroutineFunc(this.RunRecentInit));
     }
 
     protected void RunInit() {
         RunGetQuery();
+        yield();
         LoadMapsFromJson();
+        yield();
+        UpdateFiltered();
         doneLoading = true;
+        if (LoadingDone)
+            LoadingDoneTime = Time::Now;
+    }
+
+    protected void RunRecentInit() {
+        RunGetRecent();
+        yield();
+        LoadRecentFromJson();
+        yield();
+        doneLoadingRecent = true;
+        if (LoadingDone)
+            LoadingDoneTime = Time::Now;
     }
 
     protected void RunGetQuery() {
         @mainData = MapMonitor::GetUnbeatenATsInfo();
-        print(Json::Write(mainData));
+    }
+
+    protected void RunGetRecent() {
+        @recentData = MapMonitor::GetRecentlyBeatenATsInfo();
     }
 
     protected void LoadMapsFromJson() {
@@ -53,8 +87,20 @@ class UnbeatenATsData {
         }
     }
 
+    protected void LoadRecentFromJson() {
+        auto tracks = recentData['tracks'];
+        auto keysJ = recentData['keys'];
+        for (uint i = 0; i < keysJ.Length; i++) {
+            keysRB.InsertLast(keysJ[i]);
+        }
+        for (uint i = 0; i < tracks.Length; i++) {
+            auto track = tracks[i];
+            recentlyBeaten.InsertLast(UnbeatenATMap(track, keysRB, true));
+        }
+    }
+
     bool get_LoadingDone() {
-        return doneLoading;
+        return doneLoading && doneLoadingRecent;
     }
 
     UnbeatenATFilters@ filters = UnbeatenATFilters();
@@ -74,7 +120,12 @@ class UnbeatenATsData {
 
     void UpdateFiltered() {
         filteredMaps.RemoveRange(0, filteredMaps.Length);
+        uint lastPause = Time::Now;
         for (uint i = 0; i < maps.Length; i++) {
+            if (lastPause + 4 < Time::Now) {
+                yield();
+                lastPause = Time::Now;
+            }
             auto item = maps[i];
             if (filters.Matches(item)) {
                 filteredMaps.InsertLast(item);
@@ -84,7 +135,8 @@ class UnbeatenATsData {
     }
 
     void UpdateSortOrder() {
-
+        // too slow!
+        // sorting.sort(filteredMaps);
     }
 }
 
@@ -94,7 +146,7 @@ enum Ord {
 
 class UnbeatenATFilters {
 
-    bool First100KOnly = false;
+    bool First100KOnly = true;
     bool FilterNbPlayers = false;
     int NbPlayers = 0;
     uint NbPlayersOrd = Ord::LTE;
@@ -152,28 +204,36 @@ class UnbeatenATSorting {
             ;
     }
 
-    int less(const UnbeatenATMap@ a, const UnbeatenATMap@ b) {
-        if (order == UnbeatenTableSort::TMX_ID) {
-            return intLess(a.TrackID, b.TrackID);
-        }
-        if (order == UnbeatenTableSort::Name) {
-            return stringLess(a.Track_Name, b.Track_Name);
-        }
-        if (order == UnbeatenTableSort::Author_Name) {
-            return stringLess(a._AuthorDisplayName, b._AuthorDisplayName);
-        }
-        if (order == UnbeatenTableSort::Nb_Players) {
-            return intLess(a.NbPlayers, b.NbPlayers);
-        }
-        if (order == UnbeatenTableSort::AT) {
-            return intLess(a.AuthorTime, b.AuthorTime);
-        }
-        return intLess(a.TrackID, b.TrackID);
+    void sort(UnbeatenATMap@[]@ maps) {
+        _g_sortingOrder = order;
+        maps.Sort(_g_sortingLess);
     }
 
     void Draw() {
 
     }
+}
+
+UnbeatenTableSort _g_sortingOrder = UnbeatenTableSort::TMX_ID;
+
+
+bool _g_sortingLess(const UnbeatenATMap@ &in a, const UnbeatenATMap@ &in b) {
+    if (_g_sortingOrder == UnbeatenTableSort::TMX_ID) {
+        return a.TrackID < b.TrackID;
+    }
+    if (_g_sortingOrder == UnbeatenTableSort::Name) {
+        return a.Track_Name < b.Track_Name;
+    }
+    if (_g_sortingOrder == UnbeatenTableSort::Author_Name) {
+        return a._AuthorDisplayName < b._AuthorDisplayName;
+    }
+    if (_g_sortingOrder == UnbeatenTableSort::Nb_Players) {
+        return a.NbPlayers < b.NbPlayers;
+    }
+    if (_g_sortingOrder == UnbeatenTableSort::AT) {
+        return a.AuthorTime < b.AuthorTime;
+    }
+    return a.TrackID < b.TrackID;
 }
 
 int intLess(int a, int b) {
@@ -202,10 +262,15 @@ class UnbeatenATMap {
     string Tags;
     string MapType;
     string TagNames;
+    int ATBeatenTimestamp;
+    string ATBeatenUser;
 
-    UnbeatenATMap(Json::Value@ row, string[]@ keys) {
+    bool isBeaten = false;
+
+    UnbeatenATMap(Json::Value@ row, string[]@ keys, bool isBeaten = false) {
         @this.row = row;
         @this.keys = keys;
+        this.isBeaten = isBeaten;
         PopulateData();
     }
 
@@ -222,6 +287,11 @@ class UnbeatenATMap {
         MapType = GetData('MapType', MapType);
         SetTags();
         QueueAuthorLoginCache(AuthorLogin);
+        if (isBeaten) {
+            ATBeatenTimestamp = GetData('ATBeatenTimestamp', ATBeatenTimestamp);
+            ATBeatenUser = GetData('ATBeatenUsers', ATBeatenUser);
+            QueueWsidNameCache(ATBeatenUser);
+        }
     }
 
     string _AuthorDisplayName;
@@ -270,19 +340,15 @@ class UnbeatenATMap {
         return row[keys.Find(name)];
     }
 
+    void OnClickPlayMap() {
+        LoadMapNow(MapMonitor::MapUrl(TrackID));
+    }
 
-
-    void DrawTableRow() {
+    void DrawUnbeatenTableRow() {
+        UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(2, 0));
         UI::TableNextRow();
 
-        UI::TableNextColumn();
-        UI::Text("" + TrackID);
-
-        UI::TableNextColumn();
-        UI::Text(Track_Name);
-
-        UI::TableNextColumn();
-        UI::Text(AuthorDisplayName);
+        DrawTableStartCols();
 
         UI::TableNextColumn();
         UI::Text(TagNames);
@@ -298,6 +364,47 @@ class UnbeatenATMap {
         UI::TableNextColumn();
         UI::Text(WR < 0 ? "--" : Time::Format(WR - AuthorTime));
 
+        DrawTableEndCols();
+        UI::PopStyleVar();
+    }
+
+    void DrawBeatenTableRow() {
+        UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(2, 0));
+        UI::TableNextRow();
+
+        DrawTableStartCols();
+
+        UI::TableNextColumn();
+        UI::Text(Time::Format(AuthorTime));
+
+        UI::TableNextColumn();
+        UI::Text(WR >= 0 ? Time::Format(WR) : "--");
+
+        // missing time
+        UI::TableNextColumn();
+        UI::Text(GetDisplayNameForWsid(ATBeatenUser));
+
+        DrawTableEndCols();
+        UI::PopStyleVar();
+    }
+
+    // 3 cols
+    void DrawTableStartCols() {
+        UI::TableNextColumn();
+        if (UI::Button("" + TrackID)) {
+            startnew(CoroutineFunc(OnClickPlayMap));
+        }
+        AddSimpleTooltip("Load Map " + TrackID + ": " + Track_Name);
+
+        UI::TableNextColumn();
+        UI::Text(Track_Name);
+
+        UI::TableNextColumn();
+        UI::Text(AuthorDisplayName);
+    }
+
+    // 2 cols
+    void DrawTableEndCols() {
         // player count
         UI::TableNextColumn();
         UI::Text("" + NbPlayers);
@@ -305,7 +412,6 @@ class UnbeatenATMap {
         // links
         UI::TableNextColumn();
         // tmx + tm.io
-        UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(2, 0));
         if (UI::Button("TM.io##" + TrackID)) {
             OpenBrowserURL("https://trackmania.io/#/leaderboard/"+TrackUID+"?utm_source=unbeated-ats-plugin");
         }
@@ -313,7 +419,6 @@ class UnbeatenATMap {
         if (UI::Button("TMX##" + TrackID)) {
             OpenBrowserURL("https://trackmania.exchange/maps/"+TrackID+"?utm_source=unbeated-ats-plugin");
         }
-        UI::PopStyleVar();
     }
 }
 

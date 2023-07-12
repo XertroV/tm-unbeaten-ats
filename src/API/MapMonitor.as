@@ -27,4 +27,12 @@ namespace MapMonitor {
     Json::Value@ GetUnbeatenATsInfo() {
         return CallMapMonitorApiPath('/tmx/unbeaten_ats');
     }
+
+    Json::Value@ GetRecentlyBeatenATsInfo() {
+        return CallMapMonitorApiPath('/tmx/recently_beaten_ats');
+    }
+
+    string MapUrl(int TrackID) {
+        return MM_API_ROOT + "/maps/download/" + TrackID;
+    }
 }
