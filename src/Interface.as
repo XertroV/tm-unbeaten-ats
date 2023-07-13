@@ -59,27 +59,23 @@ class ListMapsTab : Tab {
             return;
         }
 
+        UI::PushStyleColor(UI::Col::TableRowBgAlt, vec4(.25, .25, .25, .5));
         DrawTable();
+        UI::PopStyleColor();
     }
 
-    void DrawRefreshButton() {
-        UI::SameLine();
-        UI::BeginDisabled(g_UnbeatenATs.LoadingDoneTime + (5 * 60 * 1000) > Time::Now);
-        if (UI::Button("Refresh")) {
-            g_UnbeatenATs.StartRefreshData();
-        }
-        UI::EndDisabled();
-    }
+    int tableFlags = UI::TableFlags::SizingStretchProp | UI::TableFlags::Resizable | UI::TableFlags::RowBg;
 
     void DrawTable() {
-        g_UnbeatenATs.DrawFilters();
-
         UI::AlignTextToFramePadding();
         UI::Text("Nb Unbeaten Tracks: " + g_UnbeatenATs.maps.Length + " (Filtered: "+g_UnbeatenATs.filteredMaps.Length+")");
         DrawRefreshButton();
 
-        if (UI::BeginTable("unbeaten-ats", 9, UI::TableFlags::SizingStretchProp | UI::TableFlags::Resizable)) {
+        g_UnbeatenATs.DrawFilters();
 
+        if (UI::BeginTable("unbeaten-ats", 10, tableFlags)) {
+
+            UI::TableSetupColumn("", UI::TableColumnFlags::WidthFixed, 50);
             UI::TableSetupColumn("TMX ID", UI::TableColumnFlags::WidthFixed, 70);
             UI::TableSetupColumn("Map Name", UI::TableColumnFlags::WidthStretch);
             UI::TableSetupColumn("Mapper", UI::TableColumnFlags::WidthFixed, 120);
@@ -95,7 +91,7 @@ class ListMapsTab : Tab {
             UI::ListClipper clip(g_UnbeatenATs.filteredMaps.Length);
             while (clip.Step()) {
                 for (int i = clip.DisplayStart; i < clip.DisplayEnd; i++) {
-                    g_UnbeatenATs.filteredMaps[i].DrawUnbeatenTableRow();
+                    g_UnbeatenATs.filteredMaps[i].DrawUnbeatenTableRow(i + 1);
                 }
             }
 
@@ -104,19 +100,48 @@ class ListMapsTab : Tab {
     }
 }
 
+
+void DrawRefreshButton() {
+    UI::SameLine();
+    UI::BeginDisabled(g_UnbeatenATs.LoadingDoneTime + (5 * 60 * 1000) > Time::Now);
+    if (UI::Button("Refresh")) {
+        g_UnbeatenATs.StartRefreshData();
+    }
+    UI::EndDisabled();
+}
+
+
+enum RecentlyBeatenList {
+    All,
+    First_100k_Only,
+    XXX_Last
+}
+
 class RecentlyBeatenMapsTab : ListMapsTab {
 
     RecentlyBeatenMapsTab(TabGroup@ parent) {
         super(parent, "Recently Beaten ATs", "");
     }
 
+    RecentlyBeatenList showList = RecentlyBeatenList::First_100k_Only;
+
     void DrawTable() override {
         UI::AlignTextToFramePadding();
         UI::Text("Recently Beaten ATs:");
         DrawRefreshButton();
 
-        if (UI::BeginTable("unbeaten-ats", 8, UI::TableFlags::SizingStretchProp | UI::TableFlags::Resizable)) {
+        if (UI::BeginCombo("Track Filter", tostring(showList))) {
+            for (int i = 0; i < int(RecentlyBeatenList::XXX_Last); i++) {
+                if (UI::Selectable(tostring(RecentlyBeatenList(i)), i == int(showList))) {
+                    showList = RecentlyBeatenList(i);
+                }
+            }
+            UI::EndCombo();
+        }
 
+        if (UI::BeginTable("unbeaten-ats", 9, tableFlags)) {
+
+            UI::TableSetupColumn("", UI::TableColumnFlags::WidthFixed, 50);
             UI::TableSetupColumn("TMX ID", UI::TableColumnFlags::WidthFixed, 70);
             UI::TableSetupColumn("Map Name", UI::TableColumnFlags::WidthStretch);
             UI::TableSetupColumn("Mapper", UI::TableColumnFlags::WidthFixed, 120);
@@ -130,10 +155,14 @@ class RecentlyBeatenMapsTab : ListMapsTab {
 
             UI::TableHeadersRow();
 
-            UI::ListClipper clip(g_UnbeatenATs.recentlyBeaten.Length);
+            auto@ theList = showList == RecentlyBeatenList::All
+                ? g_UnbeatenATs.recentlyBeaten
+                : g_UnbeatenATs.recentlyBeaten100k;
+
+            UI::ListClipper clip(theList.Length);
             while (clip.Step()) {
                 for (int i = clip.DisplayStart; i < clip.DisplayEnd; i++) {
-                    g_UnbeatenATs.recentlyBeaten[i].DrawBeatenTableRow();
+                    theList[i].DrawBeatenTableRow(i + 1);
                 }
             }
 
@@ -147,14 +176,87 @@ class PlayRandomTab : Tab {
         super(parent, "Play Random", "");
     }
 
-    void DrawInner() override {
+    UnbeatenATMap@ chosen = null;
 
+    void DrawInner() override {
+        g_UnbeatenATs.DrawFilters();
+        UI::AlignTextToFramePadding();
+        UI::Text("Choose from " + g_UnbeatenATs.filteredMaps.Length + " maps.");
+
+        if (chosen is null) {
+            if (UI::Button("Pick a Random Map")) {
+                PickRandom();
+            }
+        } else {
+            UI::AlignTextToFramePadding();
+            UI::Text("Name: " + chosen.Track_Name);
+            UI::Text("Mapper: " + chosen.AuthorDisplayName);
+            UI::Text("TMX: " + chosen.TrackID);
+            UI::Text("Tags: " + chosen.TagNames);
+            UI::Text("AT: " + chosen.ATFormatted);
+            if (chosen.WR > 0)
+                UI::Text("WR: " + Time::Format(chosen.WR) + " (+"+Time::Format(chosen.WR - chosen.AuthorTime)+")");
+            else
+                UI::Text("WR: --");
+            UI::Text("Nb Players: " + chosen.NbPlayers);
+            if (UI::Button("Play Now")) {
+                startnew(CoroutineFunc(chosen.OnClickPlayMapCoro));
+            }
+            UI::SameLine();
+            if (UI::ButtonColored("Reroll", 0.3)) {
+                PickRandom();
+            }
+            UI::Separator();
+            UI::Text("Links:");
+            chosen.DrawLinkButtons();
+        }
+    }
+
+    void PickRandom() {
+        auto ix = Math::Rand(0, g_UnbeatenATs.filteredMaps.Length);
+        @chosen = g_UnbeatenATs.filteredMaps[ix];
     }
 }
 
 
-class AboutTab : TodoTab {
+class AboutTab : Tab {
     AboutTab(TabGroup@ parent) {
         super(parent, "About", "");
     }
+
+    void DrawInner() override {
+        UI::Markdown("## Unbeaten ATs");
+        UI::TextWrapped("A plugin by XertroV in collaboration with Satamari.");
+        UI::Separator();
+        UI::AlignTextToFramePadding();
+        UI::Text("Time since refresh: " + Time::Format(Time::Now - g_UnbeatenATs.LoadingDoneTime));
+        DrawRefreshButton();
+        UI::Separator();
+        if (UI::Button("Export CSVs")) {
+            startnew(ExportCSVs);
+        }
+        UI::TextDisabled("Note: You might want to refresh, first");
+    }
+}
+
+void ExportCSVs() {
+    string unbeaten = IO::FromStorageFolder(tostring(Time::Stamp) + "-UnbeatenATs.csv");
+    string recentAll = IO::FromStorageFolder(tostring(Time::Stamp) + "-RecentATs-All.csv");
+    string recent100k = IO::FromStorageFolder(tostring(Time::Stamp) + "-RecentATs-100k.csv");
+
+    ExportMapList(unbeaten, g_UnbeatenATs.maps);
+    ExportMapList(recentAll, g_UnbeatenATs.recentlyBeaten);
+    ExportMapList(recent100k, g_UnbeatenATs.recentlyBeaten100k);
+
+    OpenExplorerPath(IO::FromStorageFolder("/"));
+}
+
+void ExportMapList(const string &in path, UnbeatenATMap@[] maps) {
+    string ret = maps[0].CSVHeader();
+    for (uint i = 0; i < maps.Length; i++) {
+        ret += maps[i].CSVRow();
+    }
+    IO::File f(path, IO::FileMode::Write);
+    f.Write(ret);
+    NotifySuccess("Exported "+maps.Length+" maps to: " + path);
 }

@@ -31,6 +31,7 @@ class UnbeatenATsData {
     UnbeatenATMap@[] filteredMaps;
 
     UnbeatenATMap@[] recentlyBeaten;
+    UnbeatenATMap@[] recentlyBeaten100k;
 
     UnbeatenATsData() {
         StartRefreshData();
@@ -42,6 +43,7 @@ class UnbeatenATsData {
         maps = {};
         filteredMaps = {};
         recentlyBeaten = {};
+        recentlyBeaten100k = {};
         startnew(CoroutineFunc(this.RunInit));
         startnew(CoroutineFunc(this.RunRecentInit));
     }
@@ -88,14 +90,21 @@ class UnbeatenATsData {
     }
 
     protected void LoadRecentFromJson() {
-        auto tracks = recentData['tracks'];
         auto keysJ = recentData['keys'];
         for (uint i = 0; i < keysJ.Length; i++) {
             keysRB.InsertLast(keysJ[i]);
         }
+
+        auto tracks = recentData['all']['tracks'];
         for (uint i = 0; i < tracks.Length; i++) {
             auto track = tracks[i];
             recentlyBeaten.InsertLast(UnbeatenATMap(track, keysRB, true));
+        }
+
+        auto tracks100k = recentData['below100k']['tracks'];
+        for (uint i = 0; i < tracks100k.Length; i++) {
+            auto track = tracks100k[i];
+            recentlyBeaten100k.InsertLast(UnbeatenATMap(track, keysRB, true));
         }
     }
 
@@ -182,7 +191,7 @@ class UnbeatenATFilters {
     }
 
     void Draw() {
-
+        First100KOnly = UI::Checkbox("IDs <= 100k", First100KOnly);
     }
 }
 
@@ -277,6 +286,7 @@ class UnbeatenATMap {
     void PopulateData () {
         TrackID = GetData('TrackID', TrackID);
         AuthorTime = GetData('AuthorTime', AuthorTime);
+        ATFormatted = Time::Format(AuthorTime);
         WR = GetData('WR', WR);
         NbPlayers = GetData('NbPlayers', NbPlayers);
         LastChecked = GetData('LastChecked', LastChecked);
@@ -294,12 +304,23 @@ class UnbeatenATMap {
         }
     }
 
+    string CSVHeader() {
+        return string::Join(keys, ",") + "\n";
+    }
+
+    string CSVRow() {
+        auto rowStr = Json::Write(row);
+        return rowStr.SubStr(1, rowStr.Length - 2) + "\n";
+    }
+
     string _AuthorDisplayName;
     string get_AuthorDisplayName() {
         return GetDisplayNameForLogin(AuthorLogin);
         // if (_AuthorDisplayName.Length > 0) return _AuthorDisplayName;
         // if (loginCache.HasKey(AuthorLogin)) _AuthorDisplayName = GetDisplayNameForLogin(AuthorLogin);
     }
+
+    string ATFormatted;
 
     void SetTags() {
         while (g_TmxTags is null) yield();
@@ -340,15 +361,15 @@ class UnbeatenATMap {
         return row[keys.Find(name)];
     }
 
-    void OnClickPlayMap() {
+    void OnClickPlayMapCoro() {
         LoadMapNow(MapMonitor::MapUrl(TrackID));
     }
 
-    void DrawUnbeatenTableRow() {
+    void DrawUnbeatenTableRow(int i) {
         UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(2, 0));
         UI::TableNextRow();
 
-        DrawTableStartCols();
+        DrawTableStartCols(i);
 
         UI::TableNextColumn();
         UI::Text(TagNames);
@@ -368,11 +389,11 @@ class UnbeatenATMap {
         UI::PopStyleVar();
     }
 
-    void DrawBeatenTableRow() {
+    void DrawBeatenTableRow(int i) {
         UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(2, 0));
         UI::TableNextRow();
 
-        DrawTableStartCols();
+        DrawTableStartCols(i);
 
         UI::TableNextColumn();
         UI::Text(Time::Format(AuthorTime));
@@ -389,10 +410,13 @@ class UnbeatenATMap {
     }
 
     // 3 cols
-    void DrawTableStartCols() {
+    void DrawTableStartCols(int i) {
+        UI::TableNextColumn();
+        UI::Text(tostring(i) + ".");
+
         UI::TableNextColumn();
         if (UI::Button("" + TrackID)) {
-            startnew(CoroutineFunc(OnClickPlayMap));
+            startnew(CoroutineFunc(OnClickPlayMapCoro));
         }
         AddSimpleTooltip("Load Map " + TrackID + ": " + Track_Name);
 
@@ -411,6 +435,10 @@ class UnbeatenATMap {
 
         // links
         UI::TableNextColumn();
+        DrawLinkButtons();
+    }
+
+    void DrawLinkButtons() {
         // tmx + tm.io
         if (UI::Button("TM.io##" + TrackID)) {
             OpenBrowserURL("https://trackmania.io/#/leaderboard/"+TrackUID+"?utm_source=unbeated-ats-plugin");

@@ -79,12 +79,16 @@ void GetWsidLoop() {
             auto resp = Core::WSIDsToNames(wsids);
             trace("Got display names: " + wsids.Length);
             for (uint i = 0; i < wsids.Length; i++) {
-                wsidCache[wsids[i]] = resp.GetDisplayName(wsids[i]);
+                wsidCache[wsids[i]] = StrOrDefault(resp.GetDisplayName(wsids[i]), wsids[i]);
             }
         } else {
             sleep(250);
         }
     }
+}
+
+const string StrOrDefault(const string &in a, const string &in d) {
+    return a.Length == 0 ? d : a;
 }
 
 string LoginToWSID(const string &in login) {
