@@ -156,9 +156,11 @@ enum Ord {
 class UnbeatenATFilters {
 
     bool First100KOnly = true;
+    bool ReverseOrder = false;
     bool FilterNbPlayers = false;
     int NbPlayers = 0;
     uint NbPlayersOrd = Ord::LTE;
+
 
     UnbeatenATFilters() {}
     UnbeatenATFilters(UnbeatenATFilters@ other) {
@@ -166,6 +168,7 @@ class UnbeatenATFilters {
         FilterNbPlayers = other.FilterNbPlayers;
         NbPlayers = other.NbPlayers;
         NbPlayersOrd = other.NbPlayersOrd;
+        ReverseOrder = other.ReverseOrder;
     }
 
     bool opEquals(const UnbeatenATFilters@ other) {
@@ -174,6 +177,7 @@ class UnbeatenATFilters {
             && FilterNbPlayers == other.FilterNbPlayers
             && NbPlayers == other.NbPlayers
             && NbPlayersOrd == other.NbPlayersOrd
+            && ReverseOrder == other.ReverseOrder
             ;
     }
 
@@ -192,7 +196,12 @@ class UnbeatenATFilters {
 
     void Draw() {
         First100KOnly = UI::Checkbox("IDs <= 100k", First100KOnly);
+        // UI::SameLine();
+        // ReverseOrder = UI::Checkbox("Reverse Order", ReverseOrder);
     }
+
+    // for the ReverseOrder option, but not sure I want to do it this way
+    // int TransformIx(int ix) {}
 }
 
 enum UnbeatenTableSort {

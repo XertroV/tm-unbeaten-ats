@@ -8,6 +8,9 @@ TabGroup@ RootTabGroup = CreateRootTabGroup();
 
 void UI_Main_Render() {
     if (!g_showWindow) return;
+    if (g_UnbeatenATs is null && !updatingATs) {
+        startnew(GetUnbeatenATsInfo);
+    }
 
     UI::SetNextWindowSize(1050, 500, UI::Cond::Appearing);
     if (UI::Begin(MenuTitle, g_showWindow, UI::WindowFlags::NoCollapse)) {

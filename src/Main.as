@@ -7,7 +7,6 @@ void Main() {
         return;
     }
     startnew(PopulateTmxTags);
-    startnew(GetUnbeatenATsInfo);
     startnew(GetAuthorLoginLoop);
     startnew(GetWsidLoop);
 }
