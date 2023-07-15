@@ -129,6 +129,7 @@ class UnbeatenATsData {
 
     void UpdateFiltered() {
         filteredMaps.RemoveRange(0, filteredMaps.Length);
+        filters.OnBeforeUpdate();
         uint lastPause = Time::Now;
         for (uint i = 0; i < maps.Length; i++) {
             if (lastPause + 4 < Time::Now) {
@@ -160,7 +161,9 @@ class UnbeatenATFilters {
     bool FilterNbPlayers = false;
     int NbPlayers = 0;
     uint NbPlayersOrd = Ord::LTE;
-
+    string AuthorFilter;
+    string MapNameFilter;
+    string BeatenByFilter;
 
     UnbeatenATFilters() {}
     UnbeatenATFilters(UnbeatenATFilters@ other) {
@@ -169,6 +172,9 @@ class UnbeatenATFilters {
         NbPlayers = other.NbPlayers;
         NbPlayersOrd = other.NbPlayersOrd;
         ReverseOrder = other.ReverseOrder;
+        AuthorFilter = other.AuthorFilter;
+        MapNameFilter = other.MapNameFilter;
+        BeatenByFilter = other.BeatenByFilter;
     }
 
     bool opEquals(const UnbeatenATFilters@ other) {
@@ -178,6 +184,9 @@ class UnbeatenATFilters {
             && NbPlayers == other.NbPlayers
             && NbPlayersOrd == other.NbPlayersOrd
             && ReverseOrder == other.ReverseOrder
+            && AuthorFilter == other.AuthorFilter
+            && MapNameFilter == other.MapNameFilter
+            && BeatenByFilter == other.BeatenByFilter
             ;
     }
 
@@ -190,18 +199,59 @@ class UnbeatenATFilters {
             if (NbPlayersOrd == Ord::LTE && NbPlayers > map.NbPlayers) return false;
             if (NbPlayersOrd == Ord::GTE && NbPlayers < map.NbPlayers) return false;
         }
+        if (!MatchString(authorSParts, map.AuthorDisplayName)) return false;
+        if (!MatchString(mapNameSParts, map.Track_Name)) return false;
+        if (!MatchString(beatenBySParts, map.ATBeatenUserDisplayName)) return false;
 
         return true;
     }
 
-    void Draw() {
+    void Draw(bool includeBeatenFilters = false) {
         First100KOnly = UI::Checkbox("IDs <= 100k", First100KOnly);
+        bool afChanged, mnfChanged, bbfChanged;
+        AuthorFilter = UI::InputText("Author", AuthorFilter, afChanged);
+        MapNameFilter = UI::InputText("Map Name", MapNameFilter, mnfChanged);
+        if (includeBeatenFilters) {
+            BeatenByFilter = UI::InputText("Beaten By", BeatenByFilter, bbfChanged);
+        }
         // UI::SameLine();
         // ReverseOrder = UI::Checkbox("Reverse Order", ReverseOrder);
     }
 
     // for the ReverseOrder option, but not sure I want to do it this way
     // int TransformIx(int ix) {}
+
+    string[]@ authorSParts = {};
+    string[]@ mapNameSParts = {};
+    string[]@ beatenBySParts = {};
+
+    void OnBeforeUpdate() {
+        @authorSParts = AuthorFilter.ToLower().Split("*");
+        // authorSParts.InsertAt(0, '');
+        @mapNameSParts = MapNameFilter.ToLower().Split("*");
+        // mapNameSParts.InsertAt(0, '');
+        @beatenBySParts = BeatenByFilter.ToLower().Split("*");
+        // beatenBySParts.InsertAt(0, '');
+    }
+
+
+    bool MatchString(string[]@ searchParts, const string &in text) {
+        if (searchParts.Length > 0) {
+            string rem = text.ToLower();
+            int _ix = 0;
+            for (uint i = 0; i < searchParts.Length; i++) {
+                if (searchParts[i].Length == 0) continue;
+                // if (i == 0 && searchParts[i].Length > 0 && !rem.StartsWith(searchParts[i])) {
+                //     return false;
+                // } else {
+                // }
+                _ix = rem.IndexOf(searchParts[i]);
+                if (_ix < 0) return false;
+                rem = rem.SubStr(_ix + searchParts[i].Length);
+            }
+        }
+        return true;
+    }
 }
 
 enum UnbeatenTableSort {
@@ -323,10 +373,14 @@ class UnbeatenATMap {
     }
 
     string _AuthorDisplayName;
-    string get_AuthorDisplayName() {
+    string get_AuthorDisplayName() const {
         return GetDisplayNameForLogin(AuthorLogin);
         // if (_AuthorDisplayName.Length > 0) return _AuthorDisplayName;
         // if (loginCache.HasKey(AuthorLogin)) _AuthorDisplayName = GetDisplayNameForLogin(AuthorLogin);
+    }
+
+    string get_ATBeatenUserDisplayName() const {
+        return GetDisplayNameForWsid(ATBeatenUser);
     }
 
     string ATFormatted;
@@ -412,7 +466,7 @@ class UnbeatenATMap {
 
         // missing time
         UI::TableNextColumn();
-        UI::Text(GetDisplayNameForWsid(ATBeatenUser));
+        UI::Text(ATBeatenUserDisplayName);
 
         DrawTableEndCols();
         UI::PopStyleVar();

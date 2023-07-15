@@ -106,7 +106,7 @@ class ListMapsTab : Tab {
 
 void DrawRefreshButton() {
     UI::SameLine();
-    UI::BeginDisabled(g_UnbeatenATs.LoadingDoneTime + (5 * 60 * 1000) > Time::Now);
+    UI::BeginDisabled(g_UnbeatenATs.LoadingDoneTime + (5 * 60 * 1000) > int(Time::Now));
     if (UI::Button("Refresh")) {
         g_UnbeatenATs.StartRefreshData();
     }
