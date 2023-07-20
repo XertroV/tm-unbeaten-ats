@@ -133,7 +133,7 @@ class RecentlyBeatenMapsTab : ListMapsTab {
         UI::Text("Recently Beaten ATs:");
         DrawRefreshButton();
 
-        if (UI::BeginCombo("Track Filter", tostring(showList))) {
+        if (UI::BeginCombo("Track List", tostring(showList))) {
             for (int i = 0; i < int(RecentlyBeatenList::XXX_Last); i++) {
                 if (UI::Selectable(tostring(RecentlyBeatenList(i)), i == int(showList))) {
                     showList = RecentlyBeatenList(i);

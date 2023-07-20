@@ -92,15 +92,20 @@ const string StrOrDefault(const string &in a, const string &in d) {
 }
 
 string LoginToWSID(const string &in login) {
-    auto buf = MemoryBuffer();
-    buf.WriteFromBase64(login, true);
-    auto hex = BufferToHex(buf);
-    return hex.SubStr(0, 8)
-        + "-" + hex.SubStr(8, 4)
-        + "-" + hex.SubStr(12, 4)
-        + "-" + hex.SubStr(16, 4)
-        + "-" + hex.SubStr(20)
-        ;
+    try {
+        auto buf = MemoryBuffer();
+        buf.WriteFromBase64(login, true);
+        auto hex = BufferToHex(buf);
+        return hex.SubStr(0, 8)
+            + "-" + hex.SubStr(8, 4)
+            + "-" + hex.SubStr(12, 4)
+            + "-" + hex.SubStr(16, 4)
+            + "-" + hex.SubStr(20)
+            ;
+    } catch {
+        warn("Login failed to convert: " + login);
+        return login;
+    }
 }
 
 string BufferToHex(MemoryBuffer@ buf) {
