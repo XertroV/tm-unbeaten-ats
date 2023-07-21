@@ -209,6 +209,7 @@ class PlayRandomTab : Tab {
             if (UI::ButtonColored("Reroll", 0.3)) {
                 PickRandom();
             }
+            if (chosen is null) return;
             UI::Separator();
             UI::Text("Links:");
             chosen.DrawLinkButtons();
@@ -216,8 +217,12 @@ class PlayRandomTab : Tab {
     }
 
     void PickRandom() {
-        auto ix = Math::Rand(0, g_UnbeatenATs.filteredMaps.Length);
-        @chosen = g_UnbeatenATs.filteredMaps[ix];
+        if (g_UnbeatenATs.filteredMaps.Length == 0) {
+            @chosen = null;
+        } else {
+            auto ix = Math::Rand(0, g_UnbeatenATs.filteredMaps.Length);
+            @chosen = g_UnbeatenATs.filteredMaps[ix];
+        }
     }
 }
 
