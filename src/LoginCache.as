@@ -52,8 +52,8 @@ void GetAuthorLoginLoop() {
             auto resp = Core::WSIDsToNames(wsids);
             // trace("Got display names: " + wsids.Length);
             for (uint i = 0; i < wsids.Length; i++) {
-                loginCache[logins[i]] = resp.GetDisplayName(wsids[i]);
-                wsidCache[wsids[i]] = resp.GetDisplayName(wsids[i]);
+                loginCache[logins[i]] = StrOrDefault(resp.GetDisplayName(wsids[i]), logins[i]);
+                wsidCache[wsids[i]] = StrOrDefault(resp.GetDisplayName(wsids[i]), wsids[i]);
                 // print("Login: " + logins[i] + " = " + string(loginCache[logins[i]]));
             }
         } else {
