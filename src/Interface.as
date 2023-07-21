@@ -86,7 +86,7 @@ class ListMapsTab : Tab {
             UI::TableSetupColumn("AT", UI::TableColumnFlags::WidthFixed, 70);
             UI::TableSetupColumn("WR", UI::TableColumnFlags::WidthFixed, 70);
             UI::TableSetupColumn("Missing Time", UI::TableColumnFlags::WidthFixed, 70);
-            UI::TableSetupColumn("Nb Players", UI::TableColumnFlags::WidthFixed, 70);
+            UI::TableSetupColumn("# Players", UI::TableColumnFlags::WidthFixed, 70);
             UI::TableSetupColumn("Links", UI::TableColumnFlags::WidthFixed, 100);
 
             UI::TableHeadersRow();
@@ -153,7 +153,7 @@ class RecentlyBeatenMapsTab : ListMapsTab {
             UI::TableSetupColumn("WR", UI::TableColumnFlags::WidthFixed, 70);
             UI::TableSetupColumn("Beaten By", UI::TableColumnFlags::WidthFixed, 120);
             // UI::TableSetupColumn("Beaten Ago", UI::TableColumnFlags::WidthFixed, 70);
-            UI::TableSetupColumn("Nb Players", UI::TableColumnFlags::WidthFixed, 70);
+            UI::TableSetupColumn("# Players", UI::TableColumnFlags::WidthFixed, 70);
             UI::TableSetupColumn("Links", UI::TableColumnFlags::WidthFixed, 100);
 
             UI::TableHeadersRow();
@@ -201,7 +201,7 @@ class PlayRandomTab : Tab {
                 UI::Text("WR: " + Time::Format(chosen.WR) + " (+"+Time::Format(chosen.WR - chosen.AuthorTime)+")");
             else
                 UI::Text("WR: --");
-            UI::Text("Nb Players: " + chosen.NbPlayers);
+            UI::Text("# Players: " + chosen.NbPlayers);
             if (UI::Button("Play Now")) {
                 startnew(CoroutineFunc(chosen.OnClickPlayMapCoro));
             }
@@ -229,10 +229,21 @@ class AboutTab : Tab {
 
     void DrawInner() override {
         UI::Markdown("## Unbeaten ATs");
+        UI::AlignTextToFramePadding();
         UI::TextWrapped("A plugin by XertroV in collaboration with Satamari.");
+        UI::AlignTextToFramePadding();
+        UI::TextWrapped("For the 100k project, please use Satamari's spreadsheet as the authoritative list. This plugin should be consided a \\$f80beta\\$z. Please report issues on the openplanet discord.");
+        if (UI::Button("Open Satamari's Unbeaten ATs Spreadsheet")) {
+            OpenBrowserURL("https://docs.google.com/spreadsheets/d/1YNJDa9u6LM34Rrf5BzJGj9IHkxG1nLIJZNu4DntdHb8/edit#gid=988833527");
+        }
         UI::Separator();
         UI::AlignTextToFramePadding();
-        UI::Text("Time since refresh: " + Time::Format(Time::Now - g_UnbeatenATs.LoadingDoneTime));
+        UI::TextWrapped("Caveats with this plugin:");
+        UI::AlignTextToFramePadding();
+        UI::TextWrapped("Maps update once every 2 hours or so.\nImpossible maps, cheated ATs, broken maps may be included in these lists (in future they'll be removed based on a TMX map pack + manual flagging).\nSome maps with old TMX records incorrectly report being beaten by the first person to beat it on the Nadeo LBs.\nA map won't show up in recently beaten if multiple people beat it at once.");
+        UI::Separator();
+        UI::AlignTextToFramePadding();
+        UI::Text("Time since refresh: " + Time::Format(Time::Now - g_UnbeatenATs.LoadingDoneTime, false));
         DrawRefreshButton();
         UI::Separator();
         if (UI::Button("Export CSVs")) {
