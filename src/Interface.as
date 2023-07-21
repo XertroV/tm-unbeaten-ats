@@ -71,7 +71,7 @@ class ListMapsTab : Tab {
 
     void DrawTable() {
         UI::AlignTextToFramePadding();
-        UI::Text("Nb Unbeaten Tracks: " + g_UnbeatenATs.maps.Length + " (Filtered: "+g_UnbeatenATs.filteredMaps.Length+")");
+        UI::Text("# Unbeaten Tracks: " + g_UnbeatenATs.maps.Length + " (Filtered: "+g_UnbeatenATs.filteredMaps.Length+")");
         DrawRefreshButton();
 
         g_UnbeatenATs.DrawFilters();
