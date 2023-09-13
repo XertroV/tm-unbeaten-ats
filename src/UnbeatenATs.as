@@ -315,6 +315,7 @@ int stringLess(const string &in a, const string &in b) {
     return 1;
 }
 
+int lastPickedTrackID;
 
 class UnbeatenATMap {
     Json::Value@ row;
@@ -478,7 +479,9 @@ class UnbeatenATMap {
         UI::Text(tostring(i) + ".");
 
         UI::TableNextColumn();
-        if (UI::Button("" + TrackID)) {
+        auto btnLab = Icons::Play + " " + TrackID;
+        if (lastPickedTrackID == TrackID ? UI::ButtonColored(btnLab, .3) : UI::Button(btnLab)) {
+            lastPickedTrackID = TrackID;
             startnew(CoroutineFunc(OnClickPlayMapCoro));
         }
         AddSimpleTooltip("Load Map " + TrackID + ": " + Track_Name);

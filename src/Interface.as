@@ -78,15 +78,15 @@ class ListMapsTab : Tab {
 
         if (UI::BeginTable("unbeaten-ats", 10, tableFlags)) {
 
-            UI::TableSetupColumn("", UI::TableColumnFlags::WidthFixed, 50);
+            UI::TableSetupColumn("", UI::TableColumnFlags::WidthFixed, 40);
             UI::TableSetupColumn("TMX ID", UI::TableColumnFlags::WidthFixed, 70);
             UI::TableSetupColumn("Map Name", UI::TableColumnFlags::WidthStretch);
             UI::TableSetupColumn("Mapper", UI::TableColumnFlags::WidthFixed, 120);
             UI::TableSetupColumn("Tags", UI::TableColumnFlags::WidthFixed, 100);
-            UI::TableSetupColumn("AT", UI::TableColumnFlags::WidthFixed, 70);
-            UI::TableSetupColumn("WR", UI::TableColumnFlags::WidthFixed, 70);
-            UI::TableSetupColumn("Missing Time", UI::TableColumnFlags::WidthFixed, 70);
-            UI::TableSetupColumn("# Players", UI::TableColumnFlags::WidthFixed, 70);
+            UI::TableSetupColumn("AT", UI::TableColumnFlags::WidthFixed, 75);
+            UI::TableSetupColumn("WR", UI::TableColumnFlags::WidthFixed, 75);
+            UI::TableSetupColumn("Missing Time", UI::TableColumnFlags::WidthFixed, 75);
+            UI::TableSetupColumn("# Players", UI::TableColumnFlags::WidthFixed, 60);
             UI::TableSetupColumn("Links", UI::TableColumnFlags::WidthFixed, 100);
 
             UI::TableHeadersRow();
