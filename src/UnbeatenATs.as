@@ -82,10 +82,12 @@ class UnbeatenATsData {
         auto keysJ = mainData['keys'];
         for (uint i = 0; i < keysJ.Length; i++) {
             keys.InsertLast(keysJ[i]);
+            if ((i+1) % 100 == 0) yield();
         }
         for (uint i = 0; i < tracks.Length; i++) {
             auto track = tracks[i];
             maps.InsertLast(UnbeatenATMap(track, keys));
+            if ((i+1) % 100 == 0) yield();
         }
     }
 
@@ -93,18 +95,21 @@ class UnbeatenATsData {
         auto keysJ = recentData['keys'];
         for (uint i = 0; i < keysJ.Length; i++) {
             keysRB.InsertLast(keysJ[i]);
+            if ((i+1) % 100 == 0) yield();
         }
 
         auto tracks = recentData['all']['tracks'];
         for (uint i = 0; i < tracks.Length; i++) {
             auto track = tracks[i];
             recentlyBeaten.InsertLast(UnbeatenATMap(track, keysRB, true));
+            if ((i+1) % 100 == 0) yield();
         }
 
         auto tracks100k = recentData['below100k']['tracks'];
         for (uint i = 0; i < tracks100k.Length; i++) {
             auto track = tracks100k[i];
             recentlyBeaten100k.InsertLast(UnbeatenATMap(track, keysRB, true));
+            if ((i+1) % 100 == 0) yield();
         }
     }
 
@@ -334,6 +339,7 @@ class UnbeatenATMap {
     int ATBeatenTimestamp;
     string ATBeatenUser;
 
+    bool hasPlayed = false;
     bool isBeaten = false;
 
     UnbeatenATMap(Json::Value@ row, string[]@ keys, bool isBeaten = false) {
@@ -362,6 +368,7 @@ class UnbeatenATMap {
             ATBeatenUser = GetData('ATBeatenUsers', ATBeatenUser);
             QueueWsidNameCache(ATBeatenUser);
         }
+        hasPlayed = HasPlayedTrack(TrackID);
     }
 
     string CSVHeader() {
@@ -426,6 +433,12 @@ class UnbeatenATMap {
     }
 
     void OnClickPlayMapCoro() {
+        try {
+            MarkTrackPlayed(TrackID);
+            this.hasPlayed = true;
+        } catch {
+            NotifyWarning("Failed to mark track as played D:\nException: " + getExceptionInfo());
+        }
         LoadMapNow(MapMonitor::MapUrl(TrackID));
     }
 
@@ -480,7 +493,8 @@ class UnbeatenATMap {
 
         UI::TableNextColumn();
         auto btnLab = Icons::Play + " " + TrackID;
-        if (lastPickedTrackID == TrackID ? UI::ButtonColored(btnLab, .3) : UI::Button(btnLab)) {
+        if (lastPickedTrackID == TrackID ? UI::ButtonColored(btnLab, .3) :
+            hasPlayed ? UI::ButtonColored(btnLab, S_PlayedMapColor) : UI::Button(btnLab)) {
             lastPickedTrackID = TrackID;
             startnew(CoroutineFunc(OnClickPlayMapCoro));
         }

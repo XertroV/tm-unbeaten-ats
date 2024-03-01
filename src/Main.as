@@ -6,6 +6,7 @@ void Main() {
         NotifyWarning("This plugin requires permission to play local maps");
         return;
     }
+    startnew(LoadPlayedTracks);
     startnew(PopulateTmxTags);
     startnew(GetAuthorLoginLoop);
     startnew(GetWsidLoop);
