@@ -290,7 +290,7 @@ class UnbeatenATSorting {
 UnbeatenTableSort _g_sortingOrder = UnbeatenTableSort::TMX_ID;
 
 
-bool _g_sortingLess(const UnbeatenATMap@ &in a, const UnbeatenATMap@ &in b) {
+bool _g_sortingLess(const UnbeatenATMap@ const &in a, const UnbeatenATMap@ const &in b) {
     if (_g_sortingOrder == UnbeatenTableSort::TMX_ID) {
         return a.TrackID < b.TrackID;
     }
