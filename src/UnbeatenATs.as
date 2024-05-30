@@ -406,12 +406,12 @@ class UnbeatenATMap {
                 warn("exception parsing tag ID: " + parts[i] + "; exception: " + getExceptionInfo());
                 continue;
             }
-            if (tagId >= int(tagLookup.Length)) {
-                warn("Unexpected tag ID: " + tagId);
-                continue;
-            }
             if (i > 0) TagNames += ", ";
-            TagNames += tagLookup[tagId];
+            if (tagId >= int(tagLookup.Length)) {
+                TagNames += tostring(tagId);
+            } else {
+                TagNames += tagLookup[tagId];
+            }
             // TagNames.InsertLast(tagLookup[tagId]);
         }
     }
