@@ -169,6 +169,7 @@ class UnbeatenATFilters {
     string AuthorFilter;
     string MapNameFilter;
     string BeatenByFilter;
+    string TagsFilter;
 
     UnbeatenATFilters() {}
     UnbeatenATFilters(UnbeatenATFilters@ other) {
@@ -180,6 +181,7 @@ class UnbeatenATFilters {
         AuthorFilter = other.AuthorFilter;
         MapNameFilter = other.MapNameFilter;
         BeatenByFilter = other.BeatenByFilter;
+        TagsFilter = other.TagsFilter;
     }
 
     bool opEquals(const UnbeatenATFilters@ other) {
@@ -192,6 +194,7 @@ class UnbeatenATFilters {
             && AuthorFilter == other.AuthorFilter
             && MapNameFilter == other.MapNameFilter
             && BeatenByFilter == other.BeatenByFilter
+            && TagsFilter == other.TagsFilter
             ;
     }
 
@@ -207,15 +210,18 @@ class UnbeatenATFilters {
         if (!MatchString(authorSParts, map.AuthorDisplayName)) return false;
         if (!MatchString(mapNameSParts, map.Track_Name)) return false;
         if (!MatchString(beatenBySParts, map.ATBeatenUserDisplayName)) return false;
+        if (!MatchString(tagsSParts, map.TagNames)) return false;
 
         return true;
     }
 
     void Draw(bool includeBeatenFilters = false) {
         First100KOnly = UI::Checkbox("IDs <= 100k", First100KOnly);
-        bool afChanged, mnfChanged, bbfChanged;
+        bool afChanged, mnfChanged, bbfChanged, tfChanged;
         AuthorFilter = UI::InputText("Author", AuthorFilter, afChanged);
         MapNameFilter = UI::InputText("Map Name", MapNameFilter, mnfChanged);
+        TagsFilter = UI::InputText("Tags (space = wildcard)", TagsFilter, tfChanged);
+        AddSimpleTooltip("Match the order of tags shown in the list. Example: \"LO snOW\" will match \"LOL, SnowCar\", but \"snOW LO\" will not.\n\n\\$iAlso, typing too fast might be an issue, so put a space after or something.");
         if (includeBeatenFilters) {
             BeatenByFilter = UI::InputText("Beaten By", BeatenByFilter, bbfChanged);
         }
@@ -229,14 +235,13 @@ class UnbeatenATFilters {
     string[]@ authorSParts = {};
     string[]@ mapNameSParts = {};
     string[]@ beatenBySParts = {};
+    string[]@ tagsSParts = {};
 
     void OnBeforeUpdate() {
-        @authorSParts = AuthorFilter.ToLower().Split("*");
-        // authorSParts.InsertAt(0, '');
-        @mapNameSParts = MapNameFilter.ToLower().Split("*");
-        // mapNameSParts.InsertAt(0, '');
-        @beatenBySParts = BeatenByFilter.ToLower().Split("*");
-        // beatenBySParts.InsertAt(0, '');
+        @authorSParts = AuthorFilter.ToLower().Replace(" ", "*").Split("*");
+        @mapNameSParts = MapNameFilter.ToLower().Replace(" ", "*").Split("*");
+        @beatenBySParts = BeatenByFilter.ToLower().Replace(" ", "*").Split("*");
+        @tagsSParts = TagsFilter.ToLower().Replace(" ", "*").Split("*");
     }
 
 
