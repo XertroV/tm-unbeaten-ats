@@ -14,6 +14,7 @@ string GetDisplayNameForLogin(const string &in login) {
     // return ret;
 }
 string GetDisplayNameForWsid(const string &in wsid) {
+    if (wsid.Length != 36) return wsid;
     if (!wsidCache.HasKey(wsid)) {
         return "?? " + wsid;
     }

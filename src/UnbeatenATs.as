@@ -526,11 +526,11 @@ class UnbeatenATMap {
     void DrawLinkButtons() {
         // tmx + tm.io
         if (UI::Button("TM.io##" + TrackID)) {
-            OpenBrowserURL("https://trackmania.io/#/leaderboard/"+TrackUID+"?utm_source=unbeated-ats-plugin");
+            OpenBrowserURL("https://trackmania.io/#/leaderboard/"+TrackUID+"?utm_source=unbeaten-ats-plugin");
         }
         UI::SameLine();
         if (UI::Button("TMX##" + TrackID)) {
-            OpenBrowserURL("https://trackmania.exchange/maps/"+TrackID+"?utm_source=unbeated-ats-plugin");
+            OpenBrowserURL("https://trackmania.exchange/maps/"+TrackID+"?utm_source=unbeaten-ats-plugin");
         }
     }
 }

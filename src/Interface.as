@@ -29,6 +29,8 @@ TabGroup@ CreateRootTabGroup() {
     ListMapsTab(root);
     PlayRandomTab(root);
     RecentlyBeatenMapsTab(root);
+    LeaderboardTab(root);
+    // LookupMapTab(root);
     AboutTab(root);
     return root;
 }
@@ -109,6 +111,15 @@ void DrawRefreshButton() {
     UI::BeginDisabled(g_UnbeatenATs.LoadingDoneTime + (5 * 60 * 1000) > int(Time::Now));
     if (UI::Button("Refresh")) {
         g_UnbeatenATs.StartRefreshData();
+    }
+    UI::EndDisabled();
+}
+
+void DrawLbRefreshButton() {
+    UI::SameLine();
+    UI::BeginDisabled(g_UnbeatenATsLeaderboard.LoadingDoneTime + (5 * 60 * 1000) > int(Time::Now));
+    if (UI::Button("Refresh")) {
+        g_UnbeatenATsLeaderboard.StartRefreshData();
     }
     UI::EndDisabled();
 }
@@ -226,6 +237,63 @@ class PlayRandomTab : Tab {
     }
 }
 
+class LeaderboardTab : Tab {
+    LeaderboardTab(TabGroup@ parent) {
+        super(parent, "Leaderboard", "");
+    }
+
+    void DrawInner() override {
+        if (g_UnbeatenATsLeaderboard is null) {
+            startnew(GetUnbeatenLeaderboard);
+            UI::Text("Loading Unbeaten ATs Leaderboard...");
+            return;
+        }
+
+        if (!g_UnbeatenATsLeaderboard.LoadingDone) {
+            UI::Text("Loading Unbeaten ATs Leaderboard...");
+            UI::Text(g_UnbeatenATsLeaderboard.LoadProgress);
+            return;
+        }
+
+        UI::Markdown("## Unbeaten ATs Leaderboard");
+        UI::AlignTextToFramePadding();
+        UI::Text("Number of Players: " + g_UnbeatenATsLeaderboard.nbPlayers);
+        DrawLbRefreshButton();
+
+        UI::Text("Your Rank: #" + g_UnbeatenATsLeaderboard.GetPlayerRankStr(NadeoServices::GetAccountID()));
+
+        if (UI::CollapsingHeader("About the LB")) {
+            UI::TextWrapped("Scores are only added when you are the \\$<\\$isole\\$> player to first get the AT of a map, when the backend checks it.");
+            UI::TextWrapped("This is not perfect, obviously, as many maps were not checked at the right time to know who was the first player to get the AT.");
+            UI::TextWrapped("Currently, you can be the first to get the AT of your own maps. If this is abused, XertroV will code up a prevention and re-process the entire LB to remove these cases.");
+            UI::Text("");
+        }
+
+        UI::Markdown("## Top 100");
+
+        UI::PushStyleColor(UI::Col::TableRowBgAlt, vec4(.25, .25, .25, .5));
+        DrawTable();
+        UI::PopStyleColor();
+    }
+
+    int tableFlags = UI::TableFlags::SizingStretchProp | UI::TableFlags::Resizable | UI::TableFlags::RowBg;
+
+    void DrawTable() {
+        if (UI::BeginTable("unbeaten-ats-lb", 4, tableFlags)) {
+            UI::TableSetupColumn("Rank", UI::TableColumnFlags::WidthFixed, 40);
+            UI::TableSetupColumn("Score (# 1st ATs)", UI::TableColumnFlags::WidthFixed, 80);
+            UI::TableSetupColumn("Name", UI::TableColumnFlags::WidthStretch);
+            UI::TableSetupColumn("Links", UI::TableColumnFlags::WidthFixed, 100);
+            UI::TableHeadersRow();
+
+            for (uint i = 0; i < g_UnbeatenATsLeaderboard.top100.Length; i++) {
+                g_UnbeatenATsLeaderboard.top100[i].DrawUnbeatenLBRow();
+            }
+
+            UI::EndTable();
+        }
+    }
+}
 
 class AboutTab : Tab {
     AboutTab(TabGroup@ parent) {
@@ -245,7 +313,7 @@ class AboutTab : Tab {
         UI::AlignTextToFramePadding();
         UI::TextWrapped("Caveats with this plugin:");
         UI::AlignTextToFramePadding();
-        UI::TextWrapped("Maps update once every 2 hours or so.\nImpossible maps, cheated ATs, broken maps may be included in these lists (in future they'll be removed based on a TMX map pack + manual flagging).\nSome maps with old TMX records incorrectly report being beaten by the first person to beat it on the Nadeo LBs.\nA map won't show up in recently beaten if multiple people beat it at once.");
+        UI::TextWrapped("Unbeaten maps are re-checked once every 2 hours or so.\nImpossible maps, cheated ATs, broken maps may be included in these lists (in future they'll be removed based on a TMX map pack + manual flagging).\nSome maps with old TMX records incorrectly report being beaten by the first person to beat it on the Nadeo LBs.\nA map won't show up in recently beaten if multiple people beat it at once.");
         UI::Separator();
         UI::AlignTextToFramePadding();
         UI::Text("Time since refresh: " + Time::Format(Time::Now - g_UnbeatenATs.LoadingDoneTime, false));
@@ -255,6 +323,7 @@ class AboutTab : Tab {
             startnew(ExportCSVs);
         }
         UI::TextDisabled("Note: You might want to refresh, first");
+        // todo: raw links
     }
 }
 

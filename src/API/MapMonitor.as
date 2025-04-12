@@ -28,6 +28,18 @@ namespace MapMonitor {
         return CallMapMonitorApiPath('/tmx/unbeaten_ats');
     }
 
+    Json::Value@ GetUnbeatenLeaderboard() {
+        return CallMapMonitorApiPath('/tmx/unbeaten_ats/leaderboard');
+    }
+
+    Json::Value@ GetUnbeatenInfoFor(int TrackID) {
+        return CallMapMonitorApiPath('/tmx/unbeaten_ats/' + TrackID);
+    }
+
+    Json::Value@ GetUnbeatenInfoUrlFor(int TrackID) {
+        return MM_API_ROOT + '/tmx/unbeaten_ats/' + TrackID;
+    }
+
     Json::Value@ GetRecentlyBeatenATsInfo() {
         return CallMapMonitorApiPath('/tmx/recently_beaten_ats');
     }
