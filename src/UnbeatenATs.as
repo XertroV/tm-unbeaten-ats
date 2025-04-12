@@ -161,7 +161,7 @@ enum Ord {
 
 class UnbeatenATFilters {
 
-    bool First100KOnly = true;
+    bool First100KOnly = false;
     bool ReverseOrder = false;
     bool FilterNbPlayers = false;
     int NbPlayers = 0;
