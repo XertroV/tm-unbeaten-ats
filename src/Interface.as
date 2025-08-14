@@ -388,6 +388,7 @@ class TogetherTab : Tab {
             }
         }
 
+#if DEPENDENCY_BETTERROOMMANAGER
         UI::SeparatorText("Fix Room Helper");
 
         UI::BeginDisabled(!UI::IsKeyDown(UI::Key::LeftShift));
@@ -412,6 +413,13 @@ class TogetherTab : Tab {
             RoomErrorCorrection::Render();
         }
         UI::EndDisabled();
+#else
+        UI::PushFontSize(22.0);
+        UI::AlignTextToFramePadding();
+        UI::Text("\\$fa6  --  Install Better Room Manager to use Together mode.  --");
+        UI::PopFontSize();
+#endif
+
 
         UI::SeparatorText("Debug Info");
 

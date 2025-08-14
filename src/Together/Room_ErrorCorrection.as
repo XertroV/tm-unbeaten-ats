@@ -147,7 +147,14 @@ namespace RoomErrorCorrection {
 		@resp = SetRoomDecoUrls(builder)
 			.SetMode(toPrams.toMode).SetMaps({toPrams.toMapUid})
 			.SaveRoom();
-		print("Server Recovery update settings 3 resp: " + Json::Write(resp));
+        string respStr = Json::Write(resp);
+		print("Server Recovery update settings 3 resp: " + respStr);
+        bool mapNotFound = respStr.Contains("map:error-notFound");
+        if (mapNotFound) {
+            UI::ShowNotification("Unbeaten ATs Together", "Error! Map not found\n\nD: oh no. Try another map.", 8000);
+            SetRoomDecoUrls(builder).SetMaps({TEST_MAP_CHANGER_TA_MAP}).SetTimeLimit(-1).SetChatTime(9).SaveRoom();
+            return;
+        }
 		SetMapCorrectionMsg("Updated server mode. (Long delay expected)");
 
 		while (CurrentUISequence() != SGamePlaygroundUIConfig::EUISequence::None) yield();
@@ -220,6 +227,9 @@ awaitable@ Start_SleepCoro(int ms) {
 void SleepCoro(int64 ms) {
 	sleep(ms);
 }
+
+
+#endif
 
 
 
@@ -295,7 +305,3 @@ bool IsPlayingOrFinish(SGamePlaygroundUIConfig::EUISequence seq) {
 	bool goodSeq = seq == SGamePlaygroundUIConfig::EUISequence::Playing || seq == SGamePlaygroundUIConfig::EUISequence::Finish;
 	return goodSeq && IsGameTimeAndStartTimePlaying();
 }
-
-
-
-#endif

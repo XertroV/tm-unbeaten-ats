@@ -157,7 +157,7 @@ class Canceller {
 
 
 
-const string TEST_MAP_CHANGER_TA_MAP = "IaSD6iPhE7gEk2a6DYipFGfyXUl";
+const string TEST_MAP_CHANGER_TA_MAP = "2fSBFs3oC3PhSbiP5TGlz_AHdxj"; // FATAL ERROR
 const string TEST_MAP_CHANGER_ROYAL_MAP = "DOqdkqJQmZXzbB1ZfnZ3P1664i6";
 
 const uint extraTimeoutSecs = 9 - 6;

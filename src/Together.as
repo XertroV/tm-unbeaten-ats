@@ -22,29 +22,8 @@ namespace Together {
         if (mapChanger is null) @mapChanger = RoomMapChanger();
         mapChanger.WithNextMap(uid, GameModeFlavor::TimeAttack).RunChangeMap_InBg();
     }
-}
-
-#else
-
-namespace Together {
-    bool CanUse() {
-        return false;
-    }
-    bool ServerInTimeAttackAndAdmin() {
-        return false;
-    }
-    void SetRoomMap_Async(const string &in uid) {
-        // no-op
-    }
-}
-
-#endif
 
 
-
-// SAME IMPL REGARDLESS OF BRM
-
-namespace Together {
     int64 lastServerMapChange;
     RoomMapChanger@ mapChanger;
 
@@ -62,7 +41,38 @@ namespace Together {
             && !IsReadyForMapChange
             && (Time::Now - lastServerMapChange) > 15000;
     }
+}
 
+#else
+
+namespace Together {
+    bool CanUse() {
+        return false;
+    }
+    bool ServerInTimeAttackAndAdmin() {
+        return false;
+    }
+    void SetRoomMap_Async(const string &in uid) {
+        // no-op
+    }
+    bool get_IsReadyForMapChange() {
+        return false;
+    }
+    bool get_HasMapChangerTimedOut() {
+        return false;
+    }
+    void ForceResetMapChanger() {
+        // no-op
+    }
+}
+
+#endif
+
+
+
+// SAME IMPL REGARDLESS OF BRM
+
+namespace Together {
     // Note: if showDisabledStatus == false, UI::SameLine() will be called after the button since the alternative branches are no-ops.
     // returns true if the button was drawn
     bool DrawPlayTogetherButton(UnbeatenATMap@ chosen, const string &in label = "Play Together (This Server)", bool showDisabledStatus = true) {
