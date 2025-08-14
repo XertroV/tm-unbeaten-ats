@@ -32,6 +32,7 @@ TabGroup@ CreateRootTabGroup() {
     LeaderboardTab(root);
     // LookupMapTab(root);
     AboutTab(root);
+    TogetherTab(root);
     return root;
 }
 
@@ -81,7 +82,7 @@ class ListMapsTab : Tab {
         if (UI::BeginTable("unbeaten-ats", 10, tableFlags)) {
 
             UI::TableSetupColumn("", UI::TableColumnFlags::WidthFixed, 40);
-            UI::TableSetupColumn("TMX ID", UI::TableColumnFlags::WidthFixed, 70);
+            UI::TableSetupColumn("TMX ID", UI::TableColumnFlags::WidthFixed, 70 + 40);
             UI::TableSetupColumn("Map Name", UI::TableColumnFlags::WidthStretch);
             UI::TableSetupColumn("Mapper", UI::TableColumnFlags::WidthFixed, 120);
             UI::TableSetupColumn("Tags", UI::TableColumnFlags::WidthFixed, 100);
@@ -156,7 +157,7 @@ class RecentlyBeatenMapsTab : ListMapsTab {
         if (UI::BeginTable("unbeaten-ats", 9, tableFlags)) {
 
             UI::TableSetupColumn("", UI::TableColumnFlags::WidthFixed, 50);
-            UI::TableSetupColumn("TMX ID", UI::TableColumnFlags::WidthFixed, 70);
+            UI::TableSetupColumn("TMX ID", UI::TableColumnFlags::WidthFixed, 70 + 40);
             UI::TableSetupColumn("Map Name", UI::TableColumnFlags::WidthStretch);
             UI::TableSetupColumn("Mapper", UI::TableColumnFlags::WidthFixed, 120);
             // UI::TableSetupColumn("Tags", UI::TableColumnFlags::WidthFixed, 100);
@@ -218,9 +219,19 @@ class PlayRandomTab : Tab {
             }
             UI::SameLine();
             if (UI::ButtonColored("Reroll", 0.3)) {
-                PickRandom();
+                startnew(CoroutineFunc(PickRandom));
             }
             if (chosen is null) return;
+
+            UI::Separator();
+            Together::DrawPlayTogetherButton(chosen);
+#if DEV
+            UI::Text("Curr Rules Time: " + GetServerCurrentRulesElapsedMillis());
+            UI::Text("Rules Start: " + GetRulesStartTime());
+            UI::Text("Rules Now: " + PlaygroundNow());
+            UI::Text("Rules End: " + GetRulesEndTime());
+#endif
+
             UI::Separator();
             UI::Text("Links:");
             chosen.DrawLinkButtons();
@@ -347,4 +358,66 @@ void ExportMapList(const string &in path, UnbeatenATMap@[] maps) {
     IO::File f(path, IO::FileMode::Write);
     f.Write(ret);
     NotifySuccess("Exported "+maps.Length+" maps to: " + path);
+}
+
+
+class TogetherTab : Tab {
+    TogetherTab(TabGroup@ parent) {
+        super(parent, "Together", "");
+    }
+
+    void DrawInner() override {
+        UI::AlignTextToFramePadding();
+        UI::Text("Together Mode (Club Room)");
+        UI::SeparatorText("Instructions");
+        UI::AlignTextToFramePadding();
+        UI::TextWrapped("A button will appear next to the Play button when you are in a club room. \\$f80You must be an admin for that club.");
+
+        UI::SeparatorText("Status");
+        UI::AlignTextToFramePadding();
+        UI::TextWrapped("Here you can see room status info and reset things if you need.");
+
+        if (Together::IsReadyForMapChange) {
+            UI::Text("No room change in progress");
+        }
+
+        if (Together::HasMapChangerTimedOut) {
+            UI::Text("Map changer has timed out.");
+            if (UI::Button("Hard Reset Map Changer")) {
+                Together::ForceResetMapChanger();
+            }
+        }
+
+        UI::SeparatorText("Fix Room Helper");
+
+        UI::BeginDisabled(!UI::IsKeyDown(UI::Key::LeftShift));
+        auto @changer = Together::mapChanger;
+        UI::AlignTextToFramePadding();
+        if (changer !is null) {
+            auto params = changer.changeRoomParams;
+            if (params !is null) {
+                UI::Text("To enable, hold left shift");
+                if (UI::Button("Run Room Error Correction Tool")) {
+                    startnew(OnFailedToLoadCorrectMapCoro, params);
+                }
+            } else {
+                UI::Text("No map change params found.");
+            }
+        } else {
+            UI::Text("No map changer found.");
+        }
+
+        if (RoomErrorCorrection::HasActiveMsg) {
+            UI::Text("Last Error Correction Msg: ");
+            RoomErrorCorrection::Render();
+        }
+        UI::EndDisabled();
+
+        UI::SeparatorText("Debug Info");
+
+        UI::Text("Rules Elapsed: " + GetServerCurrentRulesElapsedMillis());
+        UI::Text("Rules Start: " + GetRulesStartTime());
+        UI::Text("Rules Now: " + PlaygroundNow());
+        UI::Text("Rules End: " + GetRulesEndTime());
+    }
 }

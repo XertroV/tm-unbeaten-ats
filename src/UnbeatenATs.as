@@ -437,14 +437,23 @@ class UnbeatenATMap {
         return row[keys.Find(name)];
     }
 
-    void OnClickPlayMapCoro() {
+    protected void _OnPlayMap_MarkPlayed() {
         try {
             MarkTrackPlayed(TrackID);
             this.hasPlayed = true;
         } catch {
             NotifyWarning("Failed to mark track as played D:\nException: " + getExceptionInfo());
         }
+    }
+
+    void OnClickPlayMapCoro() {
+        _OnPlayMap_MarkPlayed();
         LoadMapNow(MapMonitor::MapUrl(TrackID));
+    }
+
+    void OnClickPlayTogetherCoro() {
+        _OnPlayMap_MarkPlayed();
+        Together::SetRoomMap_Async(TrackUID);
     }
 
     void DrawUnbeatenTableRow(int i) {
@@ -504,6 +513,11 @@ class UnbeatenATMap {
             startnew(CoroutineFunc(OnClickPlayMapCoro));
         }
         AddSimpleTooltip("Load Map " + TrackID + ": " + Track_Name);
+
+        UI::SameLine();
+        if (Together::DrawPlayTogetherButton(this, Icons::Play + Icons::BuildingO + "##" + TrackID, false)) {
+            AddSimpleTooltip("Play this map in a club room. You must be in a room already.");
+        }
 
         UI::TableNextColumn();
         UI::Text(Track_Name);
